@@ -1,0 +1,86 @@
+module Types where
+
+import Data.Maybe
+
+data ProductType = Beef | Pork | Replacement | Other
+  deriving (Eq, Ord, Enum)
+
+instance Show ProductType where
+  show Beef = "Содержит говядину"
+  show Pork = "Содержит свинину"
+  show Replacement = "Замена говядине/свинине"
+  show Other = "Вегетарианская еда"
+  
+data Product = Product {
+    productName :: String,
+    productGramm :: Int,
+    productType :: ProductType,
+    productTargetPerson :: Maybe Person
+}
+
+product :: String -> Int -> Product
+product s g = Product s g Other Nothing
+
+productPork :: String -> Int -> Product
+productPork s g = Product s g Pork Nothing
+
+productBeef :: String -> Int -> Product
+productBeef s g = Product s g Beef Nothing
+
+productAddGramm :: Int -> Product -> Product
+productAddGramm m p = p { productGramm = productGramm p + m }
+
+productSetGramm :: Int -> Product -> Product
+productSetGramm m p = p { productGramm = m }
+
+instance Eq Product where
+  p1 == p2 = productName p1 == productName p2
+
+instance Show Product where
+  show p = productName p ++ ": " ++ (show $ productGramm p) ++ " г, " ++ (show $ productType p)
+
+data Gender = Male | Female
+  deriving (Eq, Ord, Enum, Show)
+  
+data Person = Person {
+    personName :: String
+  , personFlavor :: ProductType
+  , personGender :: Gender
+} deriving Show
+
+instance Eq Person where
+  a == b = personName a == personName b
+  
+data MealTime = Breakfast | Dinner | Supper
+  deriving (Eq, Ord, Enum)
+
+instance Show MealTime where
+  show Breakfast = "Завтрак"
+  show Dinner = "Обед"
+  show Supper = "Ужин"
+  
+data Meal = Meal {
+    mealTime :: MealTime,
+    mealProducts :: [Product]
+}
+
+data RationDay = RationDay {
+    dayNumber :: Int,
+    breakfast :: Maybe Meal,
+    dinner :: Maybe Meal,
+    supper :: Maybe Meal
+}
+
+dayProducts :: RationDay -> [[Product]]
+dayProducts d = 
+  [ dayMealProducts Breakfast d 
+  , dayMealProducts Dinner d 
+  , dayMealProducts Supper d]
+
+dayMealProducts :: MealTime -> RationDay -> [Product]
+dayMealProducts mt d = case mt of
+  Breakfast -> maybe [] mealProducts $ breakfast d
+  Dinner -> maybe [] mealProducts $ dinner d
+  Supper -> maybe [] mealProducts $ supper d
+  
+type Ration = [RationDay]
