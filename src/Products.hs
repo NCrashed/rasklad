@@ -20,7 +20,7 @@ replaceProduct :: Person -> Product -> [Product]
 replaceProduct person p@(Product _ m tp _) 
   | tp == Beef && tp' /= Beef = replacement
   | tp == Pork && tp' == Other = replacement
-  | otherwise = []
+  | otherwise = [p]
   where
     m2 = m `div` 2
     tp' = personFlavor person

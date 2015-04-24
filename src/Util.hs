@@ -27,6 +27,9 @@ mergeColumns as@(a:_) bs@(b:_) = go <$> zip as' bs'
       | length as > i = take i as ++ bs
       | otherwise = as ++ bs
 
+mergeManyColumns :: [[[String]]] -> [[String]]
+mergeManyColumns = foldl mergeColumns []
+
 replaceElem :: (a -> Bool) -> (a -> a) -> [a] -> [a]
 replaceElem _ _ [] = []
 replaceElem fd fu (x:xs) 

@@ -74,8 +74,8 @@ predefinedProducts baskets = [
     , b 3 prunes
     ]
   , addToBasket "Кристина" [
-      byName 23 "доп. орехи (Кристина)"
-    , byName 23 "доп. сыр (Кристина)"
+      byName' 23 "доп. орехи (Кристина)" "Кристина"
+    , byName' 23 "доп. сыр (Кристина)" "Кристина"
     , b 3 coockiesChocolate
     , b 4 onion
     , b 3 buckwheat
@@ -94,8 +94,8 @@ predefinedProducts baskets = [
     
     ]
   , addToBasket "Хитеш" [
-      byName 17 "доп. орехи (Хитеш)"
-    , byName 17 "доп. сыр (Хитеш)"
+      byName' 17 "доп. орехи (Хитеш)" "Хитеш"
+    , byName' 17 "доп. сыр (Хитеш)" "Хитеш"
     ]
   , addToBasket "Святослав" [
       b 4 rusk
@@ -116,7 +116,16 @@ predefinedProducts baskets = [
 
     byName :: Int -> String -> Either Product BoxedProduct
     byName i name = Right $ toBoxed i $ product name 0
-    
+
+    byName' :: Int -> String -> String -> Either Product BoxedProduct
+    byName' i name perName = Right $ toBoxed i $ pr { 
+        productType = Replacement
+      , productTargetPerson = find ((perName==).personName) persons
+      }
+      where 
+        pr = product name 0
+        persons = basketPerson <$> baskets
+        
 recalcBaskets :: [BoxedProduct] -> [PurchaseBasket] -> [PurchaseBasket]
 recalcBaskets totalProducts baskets = recalcBasket <$> baskets
   where 
@@ -149,6 +158,12 @@ remainedProductsToPurchase plist baskets = filterTimes $ mergeBoxeds' plist prod
     filterTimes = filter (\p -> boxedTimes p /= 0)
     productsInBaskets = negateTimes <$> (rights.concat $ basketProducts <$> baskets)
 
+purchaseProductList :: [Person] -> Ration -> [BoxedProduct]
+purchaseProductList persons ration = mergeBoxeds $ rights $ concat $ basketProducts <$> baskets
+  where
+    baskets = recalcBaskets plist $ predefinedProducts $ initBaskets persons
+    plist = totalProductList persons ration
+    
 dumpPurchasesInteractive :: [Person] -> Ration -> IO ()
 dumpPurchasesInteractive persons ration = do
   putStrLn "Осталось распределить:"

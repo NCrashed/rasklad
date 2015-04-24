@@ -28,6 +28,9 @@ toBoxed :: Int -> Product -> BoxedProduct
 toBoxed t p = BoxedProduct t (productSetGramm m p)
   where m = ceiling $ fromIntegral (productGramm p) / fromIntegral t
 
+toUnboxed :: BoxedProduct -> Product
+toUnboxed bp = (boxedProduct bp) { productGramm = boxedTotalGramm bp }
+
 boxedSetGramm :: Int -> BoxedProduct -> BoxedProduct
 boxedSetGramm m bp = bp { boxedProduct = productSetGramm m $ boxedProduct bp}
 
@@ -46,6 +49,8 @@ boxedSetTimes i bp = bp { boxedTimes = i }
 mergeBoxed :: BoxedProduct -> BoxedProduct -> BoxedProduct
 mergeBoxed p1 p2 = boxedAddTimes (boxedTimes p2) p1
 
+-- | Recalulates times by gramms ratio of right product
+-- and adds the new value to left product
 mergeBoxed' :: BoxedProduct -> BoxedProduct -> BoxedProduct
 mergeBoxed' p1 p2 = mergeBoxed p1 p2'
   where 
