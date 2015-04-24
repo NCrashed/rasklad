@@ -10,6 +10,7 @@ import Algorithms.ProductList
 import Algorithms.Purchase
 import Algorithms.Carry.List
 import Algorithms.Carry.Burnout
+import Algorithms.Carry.Genetic
 
 import Data.List
 import Data.Maybe
@@ -31,8 +32,15 @@ main = do
   --dumpPurchasesInteractive persons fullMenu
   --dumpPurchases persons fullMenu
   --dumpCarryList persons fullMenu
-  dumpBurnoutPlot persons fullMenu $ carryList persons $ totalProductList persons fullMenu
+  --dumpBurnoutPlot persons fullMenu $ carryList persons $ totalProductList persons fullMenu
 
+  --distr <- geneticSolve persons fullMenu
+  --dumpBurnoutPlot persons fullMenu distr
+  --dumpCarryList persons fullMenu $ mergeCarryList distr
+
+  --dumpTemplateForDistr persons fullMenu
+  dumpMenu' persons fullMenu
+  
   --let tps = concat $ concat $ fmap dayProducts $ replacedRation (findPerson "Кристина") fullMenu
   --print $ sum $ fmap productGramm $ filter (("доп. сыр (Кристина)"==).productName) tps
 

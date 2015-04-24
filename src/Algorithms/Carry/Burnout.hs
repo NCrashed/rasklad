@@ -11,37 +11,41 @@ import Control.Applicative
 import qualified Data.ByteString.Lazy.Char8 as BS
 
 -- Returns sequence of points (meal number, gramms left in ration)
-burnoutPlot :: [Person] -> Ration -> [(Int, Int)]
-burnoutPlot persons ration = fst $ foldl go ([], sumGramms plist) $ zip [1..] meals
+burnoutPlot :: [Person] -> Ration -> [(Int, Double)]
+burnoutPlot persons ration = fst $ foldl go ([], totalGrammsBegin) $ zip [1..] meals
   where
+    totalGrammsBegin = sumGramms plist
     meals = concat $ dayProducts <$> ration
     plist = filter notReplacement $ totalProductList persons ration
     notReplacement p = productType (boxedProduct p) /= Replacement
     sumGramms pl = sum $ boxedTotalGramm <$> plist
     
-    go :: ([(Int, Int)], Int) -> (Int, [Product]) -> ([(Int, Int)], Int)
-    go (points, totalGramms) (i, meal) = (points ++ [(i, newTotalGramms)], newTotalGramms)
+    go :: ([(Int, Double)], Int) -> (Int, [Product]) -> ([(Int, Double)], Int)
+    go (points, totalGramms) (i, meal) = (points ++ [(i, loadPercent)], newTotalGramms)
       where
         mealGramms = sum $ (\p -> productGramm p * personsWhoEat persons p) <$> meal
         newTotalGramms = totalGramms - mealGramms
+        loadPercent = fromIntegral newTotalGramms / fromIntegral totalGrammsBegin
 
-burnoutPlotPerson :: [Person] -> Ration -> [CarryItem] -> Person -> [(Int, Int)]
+burnoutPlotPerson :: [Person] -> Ration -> [CarryItem] -> Person -> [(Int, Double)]
 burnoutPlotPerson persons ration solvedCarryList person = 
-  let (points, _, _) = foldl go ([], sum $ productGramm <$> plist, plist) $ zip [1..] meals
+  let (points, _, _) = foldl go ([], totalGrammsBegin, plist) $ zip [1..] meals
   in points
   where
+    totalGrammsBegin = sum $ productGramm <$> plist
     meals = concat $ dayProducts <$> replacedRation person ration 
     
     plist :: [Product]
     plist = fmap toUnboxed $ concat $ fmap carryProducts
       $ filter ((Just person ==).carryPerson) solvedCarryList
     
-    go :: ([(Int, Int)], Int, [Product]) -> (Int, [Product]) -> ([(Int, Int)], Int, [Product])
-    go (points, totalGramms, carying) (i, meal) = (points ++ [(i, newTotalGramms)], newTotalGramms, newCarying)
+    go :: ([(Int, Double)], Int, [Product]) -> (Int, [Product]) -> ([(Int, Double)], Int, [Product])
+    go (points, totalGramms, carying) (i, meal) = (points ++ [(i, loadPercent)], newTotalGramms, newCarying)
       where
         mealProducts = (\p -> productSetGramm (productGramm p * personsWhoEat persons p) p) <$> meal
         (eaten, newCarying) = substractProds mealProducts carying
         newTotalGramms = totalGramms - eaten
+        loadPercent = fromIntegral newTotalGramms / fromIntegral totalGrammsBegin
         
         substractProd :: Product -> [Product] -> (Int, [Product])
         substractProd prod boxedProds
@@ -72,10 +76,10 @@ dumpBurnoutPlot persons ration solvedCarryList = BS.putStrLn $ encodeWith (defau
     allPoints = mergeColumns points personsPoints
     
     csvTable :: [[String]]
-    csvTable = [["Прием", "Граммы"] ++ (personName <$> persons)]
+    csvTable = [["Прием", "Идеально"] ++ (personName <$> persons)]
       ++ allPoints
 
-    printPoint :: (Int, Int) -> [String]
+    printPoint :: (Int, Double) -> [String]
     printPoint (x, y) = [show x, show y]
 
 dumpBurnoutPlot' :: [Person] -> Ration -> IO ()
@@ -84,8 +88,8 @@ dumpBurnoutPlot' persons ration = BS.putStrLn $ encodeWith (defaultEncodeOptions
     points = burnoutPlot persons ration
     
     csvTable :: [[String]]
-    csvTable = [["Прием", "Граммы"]]
+    csvTable = [["Прием", "Доля"]]
       ++ (printPoint <$> points)
 
-    printPoint :: (Int, Int) -> [String]
+    printPoint :: (Int, Double) -> [String]
     printPoint (x, y) = [show x, show y]

@@ -18,8 +18,8 @@ initialOptions :: GeneticOptions
 initialOptions = GeneticOptions {
     popCount = 1,
     indCount = 50,
-    maxGeneration = 500,
-    targetFitness = Just 500,
+    maxGeneration = 10,
+    targetFitness = Nothing,
     mutationChance = 0.8,
     elitePart = 0.1
   }

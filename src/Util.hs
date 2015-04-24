@@ -61,3 +61,9 @@ fetchOne a as
     Nothing -> (Nothing, as)
     Just a' -> (Just a', filter (/=a) as)
   | otherwise = (Nothing, as)
+
+fetchOne' :: (a -> Bool) -> [a] -> (Maybe a, [a])
+fetchOne' f [] = (Nothing, [])
+fetchOne' f (a:as) 
+  | f a = (Just a, as)
+  | otherwise = let (res, as') = fetchOne' f as in (res, a:as')

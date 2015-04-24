@@ -1,6 +1,8 @@
 module Types where
 
 import Data.Maybe
+import Control.Applicative
+import Util
 
 data ProductType = Beef | Pork | Replacement | Other
   deriving (Eq, Ord, Enum)
@@ -84,3 +86,85 @@ dayMealProducts mt d = case mt of
   Supper -> maybe [] mealProducts $ supper d
   
 type Ration = [RationDay]
+
+data MealCoord = MealCoord {
+    mealCoordDay :: Int
+  , mealCoordTime :: MealTime
+  , mealCoordPos :: Int
+} deriving (Eq)
+
+instance Show MealCoord where
+  show mc = unwords [
+      "День", show $ mealCoordDay mc
+    , ":", show $ mealCoordTime mc
+    , ", продукт №" ++ show (mealCoordPos mc)
+    ]
+
+zeroMealCoord :: MealCoord
+zeroMealCoord = MealCoord 0 Breakfast 0
+
+isCoordValid :: MealCoord -> Ration -> Bool
+isCoordValid mc r = 
+  mealCoordDay mc >= 0 && mealCoordDay mc < length r
+  && isMealTimeValid day
+  && isProductPosValid (mealProducts meal)
+  where
+    day = r !! mealCoordDay mc
+    meal = case mealCoordTime mc of
+      Breakfast -> fromJust $ breakfast day
+      Dinner -> fromJust $ dinner day
+      Supper -> fromJust $ supper day
+    
+    isMealTimeValid d = case mealCoordTime mc of
+      Breakfast -> isJust $ breakfast d
+      Dinner -> isJust $ dinner d
+      Supper -> isJust $ supper d
+      
+    isProductPosValid m = let i = mealCoordPos mc
+                              in i >= 0 && i < length m
+    
+getProductByCoord :: MealCoord -> Ration -> Maybe Product
+getProductByCoord mc ration 
+  | not $ isCoordValid mc ration = Nothing
+  | otherwise = Just $ (mealProducts meal) !! mealCoordPos mc
+  where
+    day = ration !! mealCoordDay mc
+    meal = case mealCoordTime mc of
+      Breakfast -> fromJust $ breakfast day
+      Dinner -> fromJust $ dinner day
+      Supper -> fromJust $ supper day
+
+setProductByCoord :: MealCoord -> Product -> Ration -> Ration
+setProductByCoord mc prod ration
+  | not $ isCoordValid mc ration = ration
+  | otherwise = replace (mealCoordDay mc) newDay ration
+  where
+    day = ration !! mealCoordDay mc
+    newDay = case mealCoordTime mc of
+      Breakfast -> day { breakfast = Just newMeal}
+      Dinner -> day { dinner = Just newMeal }
+      Supper -> day { supper = Just newMeal }
+      
+    meal = case mealCoordTime mc of
+      Breakfast -> fromJust $ breakfast day
+      Dinner -> fromJust $ dinner day
+      Supper -> fromJust $ supper day
+
+    newMeal = meal { mealProducts = replace (mealCoordPos mc) prod $ mealProducts meal }
+    
+updateProductByCoord :: MealCoord -> (Product -> Product) -> Ration -> Ration
+updateProductByCoord mc upd ration = case getProductByCoord mc ration of
+  Nothing -> ration
+  Just p -> setProductByCoord mc p ration
+  
+iterateOverRation :: Ration -> [MealCoord]
+iterateOverRation ration = concat $ uncurry dayToCoords <$> zip [0..] ration
+  where
+    dayToCoords :: Int -> RationDay -> [MealCoord]
+    dayToCoords i rd = 
+         maybe [] (mealToCoords i Breakfast) (breakfast rd)
+      ++ maybe [] (mealToCoords i Dinner) (dinner rd)
+      ++ maybe [] (mealToCoords i Supper) (supper rd)
+
+    mealToCoords :: Int -> MealTime -> Meal -> [MealCoord]
+    mealToCoords i mt meal = MealCoord i mt <$> [0 .. length (mealProducts meal) - 1]
